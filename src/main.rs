@@ -1,5 +1,10 @@
 use std::collections::HashMap;
 
+struct Pattern {
+    pattern: [u8; 4],
+    weight: f64
+}
+
 fn column_height(board: [[u8; 7]; 6], column: i8) -> Option<u8>{
     if column < 0 || column > 6 {
         return None;
@@ -68,6 +73,43 @@ fn count_horizontal(board: [[u8; 7]; 6], player: u8)  -> HashMap<u8, Vec<[u8; 4]
 }
 
 
+fn pattern_counter(board: [[u8; 7]; 6], player: u8, patterns: Vec<Pattern>) -> f64{
+    let mut result_map: HashMap<[u8; 4], u8> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+    for rowi in 0..6{
+        let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+        for coli in 0..7{
+            let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
+            for p in patterns.iter(){
+                let curr_p_index = map.get(&p.pattern).unwrap_or(&0).to_owned();
+                
+                if (p.pattern[curr_p_index] != 0 && board[rowi][coli] == player) || 
+                    (p.pattern[curr_p_index] == 0 && board[rowi][coli] == 0) {
+                    marked.insert(p.pattern, true);
+
+                    if curr_p_index + 1 == 4 {
+                        result_map.insert(p.pattern, result_map.get(&p.pattern).unwrap_or(&0) + 1);
+                        map.insert(p.pattern, 0);
+                    } else {
+                        map.insert(p.pattern, curr_p_index + 1);
+                    }
+                }
+            }
+            for (arr, val) in marked{
+                if !val {
+                    map.insert(arr, 0);
+                }
+            }
+        }
+    }
+    println!("{:?}", result_map);
+    let mut resultant_value = 0.0;
+    for p in patterns {
+        resultant_value += p.weight * result_map.get(&p.pattern).unwrap_or(&0).to_owned() as f64;
+    }
+    resultant_value
+}
+
+
 fn evaluation_function(board: [[u8; 7]; 6], player: u8) -> i64{
     count_horizontal(board, player)[&3][0][2] as i64
 }
@@ -75,12 +117,17 @@ fn evaluation_function(board: [[u8; 7]; 6], player: u8) -> i64{
 
 fn main() {
     let board: [[u8; 7]; 6] = [
-        [0, 0, 0, 1, 1, 0, 0],
+        [1, 0, 0, 1, 1, 0, 1],
         [0, 0, 0, 2, 2, 0, 0],
         [0, 0, 2, 2, 2, 0, 0],
         [0, 0, 1, 1, 1, 0, 0],
         [2, 0, 2, 2, 1, 1, 1],
         [1, 2, 2, 1, 1, 1, 2]
     ];
-    println!("{:?}", count_horizontal(board, 1));
+    println!("{:?}", pattern_counter(board, 2, vec![
+            Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
+            Pattern{pattern: [1, 0, 0, 1], weight: 1.0},
+            Pattern{pattern: [1, 1, 1, 1], weight: 1.0},
+            Pattern{pattern: [1, 0, 1, 1], weight: 1.0}
+        ]));
 }
