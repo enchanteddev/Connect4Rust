@@ -53,6 +53,7 @@ fn pattern_counter(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pattern>) ->
     resultant_value
 }
 
+
 fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut HashMap<[u8; 4], usize>, cell_value: u8, player: u8, result_map: &mut HashMap<[u8; 4], u8>) {
     let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
     for p in patterns.iter(){
@@ -111,6 +112,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
     resultant_value
 }
 
+
 fn evaluation_function(board: &Vec<Vec<u8>>, player: u8) -> f64{
     let patterns = vec![
         Pattern{pattern: [1, 1, 0, 0], weight: 10.0},
@@ -130,7 +132,7 @@ fn evaluation_function(board: &Vec<Vec<u8>>, player: u8) -> f64{
     let transposed = transpose(board);
     let horiz = pattern_counter(board, player, &patterns);
     let verti = pattern_counter(&transposed, player, &patterns);
-    let diag1 = pattern_counter_diagonal(&transposed, player, &patterns);
+    let diag1 = pattern_counter_diagonal(&board, player, &patterns);
     let diag2 = pattern_counter_diagonal(&transposed, player, &patterns);
     
     horiz + verti + diag1 + diag2
