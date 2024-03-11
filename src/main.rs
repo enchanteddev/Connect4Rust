@@ -5,7 +5,7 @@ struct Pattern {
     weight: f64
 }
 
-fn column_height(board: [[u8; 7]; 6], column: i8) -> Option<u8>{
+fn column_height(board: &Vec<Vec<u8>>, column: i8) -> Option<u8>{
     if column < 0 || column > 6 {
         return None;
     }
@@ -18,7 +18,7 @@ fn column_height(board: [[u8; 7]; 6], column: i8) -> Option<u8>{
     
 }
 
-fn height_drop(board: [[u8; 7]; 6], row: i8, column: i8) -> u8{
+fn height_drop(board: &Vec<Vec<u8>>, row: i8, column: i8) -> u8{
     let start_height = column_height(board, column).unwrap_or(6 as u8);
     let rowi = 6 - row;
     if start_height < rowi as u8 {
@@ -27,7 +27,7 @@ fn height_drop(board: [[u8; 7]; 6], row: i8, column: i8) -> u8{
 }
 
 
-fn count_horizontal(board: [[u8; 7]; 6], player: u8)  -> HashMap<u8, Vec<[u8; 4]>>{
+fn count_horizontal(board: &Vec<Vec<u8>>, player: u8)  -> HashMap<u8, Vec<[u8; 4]>>{
     let mut map: HashMap<u8, Vec<[u8; 4]>> = HashMap::new();
     for (rowi, row) in board.iter().enumerate() {
         let mut count: u8 = 0;
@@ -73,11 +73,22 @@ fn count_horizontal(board: [[u8; 7]; 6], player: u8)  -> HashMap<u8, Vec<[u8; 4]
 }
 
 
-fn pattern_counter(board: [[u8; 7]; 6], player: u8, patterns: Vec<Pattern>) -> f64{
+fn transpose(board: &Vec<Vec<u8>>) -> Vec<Vec<u8>>{
+    let mut nboard = vec![vec![0; 6]; 7];
+    for row in 0..board.len(){
+        for col in 0..board[0].len(){
+            nboard[col][row] = board[row][col];
+        }
+    }
+    nboard
+}
+
+
+fn pattern_counter(board: &Vec<Vec<u8>>, player: u8, patterns: Vec<Pattern>) -> f64{
     let mut result_map: HashMap<[u8; 4], u8> = patterns.iter().map(|e| (e.pattern, 0)).collect();
-    for rowi in 0..6{
+    for rowi in 0..board.len(){
         let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
-        for coli in 0..7{
+        for coli in 0..board[0].len(){
             let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
             for p in patterns.iter(){
                 let curr_p_index = map.get(&p.pattern).unwrap_or(&0).to_owned();
@@ -110,21 +121,27 @@ fn pattern_counter(board: [[u8; 7]; 6], player: u8, patterns: Vec<Pattern>) -> f
 }
 
 
-fn evaluation_function(board: [[u8; 7]; 6], player: u8) -> i64{
-    count_horizontal(board, player)[&3][0][2] as i64
+fn evaluation_function(board: Vec<Vec<u8>>, player: u8) -> i64{
+    count_horizontal(&board, player)[&3][0][2] as i64
 }
 
 
 fn main() {
-    let board: [[u8; 7]; 6] = [
-        [1, 0, 0, 1, 1, 0, 1],
-        [0, 0, 0, 2, 2, 0, 0],
-        [0, 0, 2, 2, 2, 0, 0],
-        [0, 0, 1, 1, 1, 0, 0],
-        [2, 0, 2, 2, 1, 1, 1],
-        [1, 2, 2, 1, 1, 1, 2]
+    let board: Vec<Vec<u8>> = vec![
+        vec![1, 0, 0, 1, 1, 0, 1],
+        vec![0, 0, 0, 2, 2, 0, 0],
+        vec![0, 0, 2, 2, 2, 0, 0],
+        vec![1, 0, 1, 1, 1, 0, 0],
+        vec![2, 0, 2, 2, 1, 1, 1],
+        vec![1, 2, 2, 1, 1, 1, 2]
     ];
-    println!("{:?}", pattern_counter(board, 2, vec![
+    println!("{:?}", pattern_counter(&board, 1, vec![
+            Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
+            Pattern{pattern: [1, 0, 0, 1], weight: 1.0},
+            Pattern{pattern: [1, 1, 1, 1], weight: 1.0},
+            Pattern{pattern: [1, 0, 1, 1], weight: 1.0}
+        ]));
+    println!("{:?}", pattern_counter(&transpose(&board), 1, vec![
             Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
             Pattern{pattern: [1, 0, 0, 1], weight: 1.0},
             Pattern{pattern: [1, 1, 1, 1], weight: 1.0},
