@@ -1,4 +1,4 @@
-use std::{collections::HashMap, vec};
+use std::{collections::HashMap, f64::INFINITY, vec};
 
 struct Pattern {
     pattern: [u8; 4],
@@ -66,13 +66,14 @@ fn pattern_counter(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pattern>, tr
 
 
 fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut HashMap<[u8; 4], usize>, cell_value: u8, player: u8, result_map: &mut HashMap<[u8; 4], u8>) {
-    let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
-    for p in patterns.iter(){
+    // let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
+    let mut marked = vec![false; patterns.len()];
+    for (i, p) in patterns.iter().enumerate(){
         let curr_p_index = map.get(&p.pattern).unwrap_or(&0).to_owned();
-    
         if (p.pattern[curr_p_index] != 0 && cell_value == player) || 
             (p.pattern[curr_p_index] == 0 && cell_value == 0) {
-            marked.insert(p.pattern, true);
+            // marked.insert(p.pattern, true);
+            marked[i] = true;
 
             if curr_p_index + 1 == 4 {
                 result_map.insert(p.pattern, result_map.get(&p.pattern).unwrap_or(&0) + 1);
@@ -82,9 +83,9 @@ fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut HashMap<[u8; 4], us
             }
         }
     }
-    for (arr, val) in marked{
+    for (arr, val) in marked.iter().enumerate(){
         if !val {
-            map.insert(arr, 0);
+            map.insert(patterns[arr].pattern, 0);
         }
     }
 }
@@ -152,7 +153,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
 }
 
 
-fn evaluation_function(board: &Vec<Vec<u8>>, player: u8) -> f64{
+fn evfn(board: &Vec<Vec<u8>>, player: u8) -> f64{
     let patterns = vec![
         Pattern{pattern: [1, 1, 0, 0], weight: 10.0},
         Pattern{pattern: [1, 0, 1, 0], weight: 10.0},
@@ -178,22 +179,108 @@ fn evaluation_function(board: &Vec<Vec<u8>>, player: u8) -> f64{
 }
 
 
+fn evaluation_function(board: &Vec<Vec<u8>>, player: u8, enemy_factor: f64) -> f64{
+    evfn(board, player) - enemy_factor * evfn(board,  if player == 1 {2} else {1})
+}
+
+
+fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<Vec<Vec<u8>>> {
+    let mut next_moves: Vec<Vec<Vec<u8>>> = vec![];
+    for moves in 0..board[0].len(){
+        if board[0][moves] != 0 {continue;}
+        let mut pushed = false;
+        for r in 1..board.len(){
+            if board[r][moves] != 0 {
+                let mut new_board = board.clone();
+                new_board[r - 1][moves] = player;
+                next_moves.push(new_board);
+                pushed = true;
+                break;
+            }
+        }
+        if !pushed {
+            let mut new_board = board.clone();
+            new_board[board.len() - 1][moves] = player;
+            next_moves.push(new_board);
+        }
+    }
+    next_moves
+}
+
+static EF: f64 = 2.0;
+
+fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
+    let next_states = expand_board(board, player);
+    // println!("{:?}", next_states);
+    if next_states.len() == 0{
+        return (evaluation_function(board, player, EF), -1);
+    }
+    if level == 0 {
+        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(s, player, EF), i as i8)).max_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+    }
+    let mut currmax = -INFINITY;
+    let mut maxmove = -1;
+    for (movei, state) in next_states.iter().enumerate() {
+        let (minef, _) = get_min_move(state, level - 1, player, currmax);
+        if minef > currmax {
+            currmax = minef;
+            maxmove = movei as i8;
+        }
+    }
+    (currmax, maxmove)
+}
+
+
+fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (f64, i8){
+    let enemy = if player == 1 {2} else {1};
+    let next_states = expand_board(board, enemy);
+    if next_states.len() == 0{
+        return (evaluation_function(board, player, EF), -1);
+    }
+    if level == 0 {
+        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(s, player, EF), i as i8)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+    }
+    let mut currmin = INFINITY;
+    let mut minmove = -1;
+    for (movei, state) in next_states.iter().enumerate() {
+        let (maxef, _) = get_max_move(state, level - 1, player);
+        if maxef < currmin {
+            currmin = maxef;
+            minmove = movei as i8;
+        }
+        if maxef < currmax {
+            return  (currmin, movei as  i8);
+        }
+    }
+    (currmin, minmove)
+}
+
+
 fn main() {
     let board: Vec<Vec<u8>> = vec![
-        vec![1, 0, 0, 1, 1, 0, 1],
-        vec![1, 0, 0, 2, 1, 0, 0],
-        vec![0, 0, 1, 2, 2, 0, 0],
-        vec![1, 0, 1, 1, 1, 0, 1],
-        vec![2, 0, 2, 1, 1, 1, 1],
-        vec![1, 2, 2, 1, 1, 1, 2]
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
     ];
-    for i in 0..7*7*7*7*7{
-        evaluation_function(&board, 1);
-        evaluation_function(&board, 2);
-    }
+    // let board: Vec<Vec<u8>> = vec![
+    //     vec![1, 0, 0, 1, 1, 0, 1],
+    //     vec![1, 0, 0, 2, 1, 0, 0],
+    //     vec![0, 0, 1, 2, 2, 0, 0],
+    //     vec![1, 0, 1, 1, 1, 0, 1],
+    //     vec![2, 0, 2, 1, 1, 1, 1],
+    //     vec![1, 2, 2, 1, 1, 1, 2]
+    // ];
+    // for i in 0..7*7*7*7*7{
+    //     evfn(&board, 1);
+    //     evfn(&board, 2);
+    // }
     // println!("{}", evaluation_function(&board, 1));
     // println!("{}", evaluation_function(&board, 2));
     // println!("{}", pattern_counter_diagonal(&board, 1, &vec![Pattern{pattern: [1, 1, 0, 1], weight: 1.0}]));
+    println!("{:?}", get_max_move(&board, 5, 1));
     print!("DONE!")
     // println!("{:?}", pattern_counter(&board, 1, &vec![
     //         Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
