@@ -39,14 +39,14 @@ fn rot90(board: &Vec<Vec<u8>>) -> Vec<Vec<u8>>{ // TODO
 
 fn pattern_counter(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pattern>, transpose: bool) -> f64{
     let mut result_map: HashMap<[u8; 4], u8> = patterns.iter().map(|e| (e.pattern, 0)).collect();
-    let map1: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+    let map1: Vec<usize> = vec![0; patterns.len()];
     let (r1, r2) = if transpose {
         (0..board[0].len(), 0..board.len())
     } else {
         (0..board.len(), 0..board[0].len())
     };
     for rowi in r1{
-        let mut map: HashMap<[u8; 4], usize> = map1.clone();
+        let mut map: Vec<usize> = map1.clone();
         for coli in r2.clone(){
             let cell = if transpose {
                 board[coli][rowi]
@@ -65,11 +65,12 @@ fn pattern_counter(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pattern>, tr
 }
 
 
-fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut HashMap<[u8; 4], usize>, cell_value: u8, player: u8, result_map: &mut HashMap<[u8; 4], u8>) {
+fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut Vec<usize>, cell_value: u8, player: u8, result_map: &mut HashMap<[u8; 4], u8>) {
     // let mut marked: HashMap<[u8; 4], bool> = patterns.iter().map(|e| (e.pattern, false)).collect();
     let mut marked = vec![false; patterns.len()];
     for (i, p) in patterns.iter().enumerate(){
-        let curr_p_index = map.get(&p.pattern).unwrap_or(&0).to_owned();
+        // let curr_p_index = map.get(&p.pattern).unwrap_or(&0).to_owned();
+        let curr_p_index = map[i].to_owned();
         if (p.pattern[curr_p_index] != 0 && cell_value == player) || 
             (p.pattern[curr_p_index] == 0 && cell_value == 0) {
             // marked.insert(p.pattern, true);
@@ -77,15 +78,17 @@ fn apply_pattern_checking(patterns: &Vec<Pattern>, map: &mut HashMap<[u8; 4], us
 
             if curr_p_index + 1 == 4 {
                 result_map.insert(p.pattern, result_map.get(&p.pattern).unwrap_or(&0) + 1);
-                map.insert(p.pattern, 0);
+                // map.insert(p.pattern, 0);
+                map[i] = 0;
             } else {
-                map.insert(p.pattern, curr_p_index + 1);
+                map[i] = curr_p_index + 1;
             }
         }
     }
     for (arr, val) in marked.iter().enumerate(){
         if !val {
-            map.insert(patterns[arr].pattern, 0);
+            // map.insert(patterns[arr].pattern, 0);
+            map[arr] = 0;
         }
     }
 }
@@ -97,7 +100,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
     let mut rowi = 0;
     for colistart in 0..board[0].len(){
         let mut coli = colistart;
-        let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+        let mut map: Vec<usize> = vec![0; patterns.len()];
         while rowi < board.len() && coli < board[0].len() {
             apply_pattern_checking(&patterns, &mut map, board[rowi][coli], player, &mut result_map);
             rowi += 1;
@@ -108,7 +111,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
     let mut coli = 0;
     for rowistart in 1..board.len(){
         let mut rowi = rowistart;
-        let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+        let mut map: Vec<usize> = vec![0; patterns.len()];
         while rowi < board.len() && coli < board[0].len() {
             apply_pattern_checking(&patterns, &mut map, board[rowi][coli], player, &mut result_map);
             rowi += 1;
@@ -119,7 +122,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
     let mut rowi = 0;
     for colistart in (0..board[0].len()).rev(){
         let mut coli = colistart;
-        let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+        let mut map: Vec<usize> = vec![0; patterns.len()];
         while rowi < board.len() {
             apply_pattern_checking(&patterns, &mut map, board[rowi][coli], player, &mut result_map);
             rowi += 1;
@@ -133,7 +136,7 @@ fn pattern_counter_diagonal(board: &Vec<Vec<u8>>, player: u8, patterns: &Vec<Pat
     let mut coli = board[0].len() - 1;
     for rowistart in 1..board.len(){
         let mut rowi = rowistart;
-        let mut map: HashMap<[u8; 4], usize> = patterns.iter().map(|e| (e.pattern, 0)).collect();
+        let mut map: Vec<usize> = vec![0; patterns.len()];
         while rowi < board.len() {
             apply_pattern_checking(&patterns, &mut map, board[rowi][coli], player, &mut result_map);
             rowi += 1;
@@ -167,7 +170,7 @@ fn evfn(board: &Vec<Vec<u8>>, player: u8) -> f64{
         Pattern{pattern: [1, 1, 0, 1], weight: 100.0},
         Pattern{pattern: [1, 0, 1, 1], weight: 100.0},
 
-        Pattern{pattern: [1, 1, 1, 1], weight: 10000.0}
+        Pattern{pattern: [1, 1, 1, 1], weight: 1000000.0}
     ];
     // let transposed = rot90(board);
     let horiz = pattern_counter(board, player, &patterns, false);
@@ -184,8 +187,8 @@ fn evaluation_function(board: &Vec<Vec<u8>>, player: u8, enemy_factor: f64) -> f
 }
 
 
-fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<Vec<Vec<u8>>> {
-    let mut next_moves: Vec<Vec<Vec<u8>>> = vec![];
+fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<(Vec<Vec<u8>>, i8)> {
+    let mut next_moves: Vec<(Vec<Vec<u8>>, i8)> = vec![];
     for moves in 0..board[0].len(){
         if board[0][moves] != 0 {continue;}
         let mut pushed = false;
@@ -193,7 +196,7 @@ fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<Vec<Vec<u8>>> {
             if board[r][moves] != 0 {
                 let mut new_board = board.clone();
                 new_board[r - 1][moves] = player;
-                next_moves.push(new_board);
+                next_moves.push((new_board, moves as i8));
                 pushed = true;
                 break;
             }
@@ -201,13 +204,24 @@ fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<Vec<Vec<u8>>> {
         if !pushed {
             let mut new_board = board.clone();
             new_board[board.len() - 1][moves] = player;
-            next_moves.push(new_board);
+            next_moves.push((new_board, moves as i8));
         }
     }
     next_moves
 }
 
 static EF: f64 = 2.0;
+
+fn is_terminal(board: &Vec<Vec<u8>>, player: u8) -> bool{
+    let patterns = vec![
+        Pattern{pattern: [1, 1, 1, 1], weight: 1.0}
+    ];
+    let horiz = pattern_counter(board, player, &patterns, false);
+    let verti = pattern_counter(board, player, &patterns, true);
+    let diag1 = pattern_counter_diagonal(&board, player, &patterns);
+
+    horiz == 1.0 || verti == 1.0 || diag1 == 1.0
+}
 
 fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
     let next_states = expand_board(board, player);
@@ -216,15 +230,20 @@ fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
         return (evaluation_function(board, player, EF), -1);
     }
     if level == 0 {
-        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(s, player, EF), i as i8)).max_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(&s.0, player, EF), i as i8)).max_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
     }
     let mut currmax = -INFINITY;
     let mut maxmove = -1;
-    for (movei, state) in next_states.iter().enumerate() {
-        let (minef, _) = get_min_move(state, level - 1, player, currmax);
+    for (state, movei) in next_states.iter(){
+        if is_terminal(state, player) {
+            return (evaluation_function(state, player, EF), *movei);
+        }
+    }
+    for (state, movei) in next_states.iter() {
+        let (minef, _) = get_min_move(&state, level - 1, player, currmax);
         if minef > currmax {
             currmax = minef;
-            maxmove = movei as i8;
+            maxmove = *movei;
         }
     }
     (currmax, maxmove)
@@ -238,12 +257,12 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
         return (evaluation_function(board, player, EF), -1);
     }
     if level == 0 {
-        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(s, player, EF), i as i8)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(&s.0, player, EF), i as i8)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
     }
     let mut currmin = INFINITY;
     let mut minmove = -1;
-    for (movei, state) in next_states.iter().enumerate() {
-        let (maxef, _) = get_max_move(state, level - 1, player);
+    for (state, movei) in next_states {
+        let (maxef, _) = get_max_move(&state, level - 1, player);
         if maxef < currmin {
             currmin = maxef;
             minmove = movei as i8;
@@ -255,8 +274,39 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
     (currmin, minmove)
 }
 
+#[allow(unused_macros)]
+macro_rules! read {
+    ($out:ident as $type:ty) => {
+        let mut inner = String::new();
+        std::io::stdin().read_line(&mut inner).expect("A String");
+        let $out = inner.trim().parse::<$type>().expect("Parsable");
+    };
+}
 
-fn main() {
+#[allow(unused_macros)]
+macro_rules! read_vec {
+    ($out:ident as $type:ty) => {
+        let mut inner = String::new();
+        std::io::stdin().read_line(&mut inner).unwrap();
+        let $out = inner
+            .trim()
+            .split_whitespace()
+            .map(|s| s.parse::<$type>().unwrap())
+            .collect::<Vec<$type>>();
+    };
+}
+
+fn main(){
+    read!(player as u8);
+    let mut board: Vec<Vec<u8>> = vec![];
+    for i in 0..6{
+        read_vec!(r1 as u8);
+        board.push(r1);
+    }
+    println!("{:?}", get_max_move(&board, 6, player).1);
+}
+
+fn main2() {
     let board: Vec<Vec<u8>> = vec![
         vec![0, 0, 0, 0, 0, 0, 0],
         vec![0, 0, 0, 0, 0, 0, 0],
