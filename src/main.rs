@@ -223,7 +223,7 @@ fn is_terminal(board: &Vec<Vec<u8>>, player: u8) -> bool{
     horiz == 1.0 || verti == 1.0 || diag1 == 1.0
 }
 
-fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
+pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
     let next_states = expand_board(board, player);
     // println!("{:?}", next_states);
     if next_states.len() == 0{
