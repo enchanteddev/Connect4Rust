@@ -303,7 +303,7 @@ fn main(){
         read_vec!(r1 as u8);
         board.push(r1);
     }
-    println!("{:?}", get_max_move(&board, 6, player).1);
+    println!("{:?}", get_max_move(&board, 5, player).1);
 }
 
 fn main2() {
