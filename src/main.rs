@@ -223,7 +223,7 @@ fn is_terminal(board: &Vec<Vec<u8>>, player: u8) -> bool{
     horiz == 1.0 || verti == 1.0 || diag1 == 1.0
 }
 
-pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
+pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) -> (f64, i8){
     let next_states = expand_board(board, player);
     // println!("{:?}", next_states);
     if next_states.len() == 0{
@@ -245,6 +245,9 @@ pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8) -> (f64, i8){
             currmax = minef;
             maxmove = *movei;
         }
+        if minef > currmin {
+            return (currmin, *movei);
+        }
     }
     (currmax, maxmove)
 }
@@ -262,7 +265,7 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
     let mut currmin = INFINITY;
     let mut minmove = -1;
     for (state, movei) in next_states {
-        let (maxef, _) = get_max_move(&state, level - 1, player);
+        let (maxef, _) = get_max_move(&state, level - 1, player, currmin);
         if maxef < currmin {
             currmin = maxef;
             minmove = movei as i8;
@@ -296,17 +299,17 @@ macro_rules! read_vec {
     };
 }
 
-fn main(){
+fn main2(){
     read!(player as u8);
     let mut board: Vec<Vec<u8>> = vec![];
     for i in 0..6{
         read_vec!(r1 as u8);
         board.push(r1);
     }
-    println!("{:?}", get_max_move(&board, 5, player).1);
+    println!("{:?}", get_max_move(&board, 5, player, INFINITY).1);
 }
 
-fn main2() {
+fn main() {
     let board: Vec<Vec<u8>> = vec![
         vec![0, 0, 0, 0, 0, 0, 0],
         vec![0, 0, 0, 0, 0, 0, 0],
@@ -330,7 +333,7 @@ fn main2() {
     // println!("{}", evaluation_function(&board, 1));
     // println!("{}", evaluation_function(&board, 2));
     // println!("{}", pattern_counter_diagonal(&board, 1, &vec![Pattern{pattern: [1, 1, 0, 1], weight: 1.0}]));
-    println!("{:?}", get_max_move(&board, 5, 1));
+    println!("{:?}", get_max_move(&board, 5, 1, INFINITY));
     print!("DONE!")
     // println!("{:?}", pattern_counter(&board, 1, &vec![
     //         Pattern{pattern: [1, 1, 0, 1], weight: 1.0},

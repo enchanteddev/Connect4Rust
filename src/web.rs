@@ -1,5 +1,7 @@
 mod main;
 
+use std::f64::INFINITY;
+
 use wasm_bindgen::prelude::*;
 use main::get_max_move;
 
@@ -11,5 +13,5 @@ pub fn get_move(board: Vec<u8>, level: i32, player: u8) -> i8 {
         let coli = i % 7;
         nboard[rowi][coli] = *elem;
     }
-    get_max_move(&nboard, level, player).1
+    get_max_move(&nboard, level, player, INFINITY).1
 }
