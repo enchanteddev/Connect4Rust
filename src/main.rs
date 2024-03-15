@@ -187,24 +187,20 @@ fn evaluation_function(board: &Vec<Vec<u8>>, player: u8, enemy_factor: f64) -> f
 }
 
 
-fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<(Vec<Vec<u8>>, i8)> {
-    let mut next_moves: Vec<(Vec<Vec<u8>>, i8)> = vec![];
+fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<(usize, usize)> {
+    let mut next_moves: Vec<(usize, usize)> = vec![];
     for moves in 0..board[0].len(){
         if board[0][moves] != 0 {continue;}
         let mut pushed = false;
         for r in 1..board.len(){
             if board[r][moves] != 0 {
-                let mut new_board = board.clone();
-                new_board[r - 1][moves] = player;
-                next_moves.push((new_board, moves as i8));
+                next_moves.push((r - 1, moves));
                 pushed = true;
                 break;
             }
         }
         if !pushed {
-            let mut new_board = board.clone();
-            new_board[board.len() - 1][moves] = player;
-            next_moves.push((new_board, moves as i8));
+            next_moves.push((board.len() - 1, moves));
         }
     }
     next_moves
@@ -230,23 +226,33 @@ pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) 
         return (evaluation_function(board, player, EF), -1);
     }
     if level == 0 {
-        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(&s.0, player, EF), i as i8)).max_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+        return next_states.iter().map(|y| {
+            let mut state = board.clone();
+            state[y.0][y.1] = player;
+            (evaluation_function(&state, player, EF), -1)
+        }).max_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
     }
     let mut currmax = -INFINITY;
-    let mut maxmove = -1;
-    for (state, movei) in next_states.iter(){
-        if is_terminal(state, player) {
-            return (evaluation_function(state, player, EF), *movei);
+    let mut maxmove: i8 = -1;
+
+    let mut states: Vec<(Vec<Vec<u8>>, usize)> = vec![];
+
+    for (x, y) in next_states.iter(){
+        let mut state = board.clone();
+        state[*x][*y] = player;
+        if is_terminal(&state, player) {
+            return (evaluation_function(&state, player, EF), *y as i8);
         }
+        states.push((state, *y));
     }
-    for (state, movei) in next_states.iter() {
+    for (state, movei) in states.iter() {
         let (minef, _) = get_min_move(&state, level - 1, player, currmax);
         if minef > currmax {
             currmax = minef;
-            maxmove = *movei;
+            maxmove = *movei as i8;
         }
         if minef > currmin {
-            return (currmin, *movei);
+            return (currmin, *movei as i8);
         }
     }
     (currmax, maxmove)
@@ -260,18 +266,25 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
         return (evaluation_function(board, player, EF), -1);
     }
     if level == 0 {
-        return next_states.iter().enumerate().map(|(i, s)| (evaluation_function(&s.0, player, EF), i as i8)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
+        return next_states.iter().map(|y| {
+            let mut state = board.clone();
+            state[y.0][y.1] = enemy;
+            (evaluation_function(&state, player, EF), -1)
+        }).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
     }
+
     let mut currmin = INFINITY;
     let mut minmove = -1;
-    for (state, movei) in next_states {
+    for (x, y) in next_states {
+        let mut state = board.clone();
+        state[x][y] = enemy;
         let (maxef, _) = get_max_move(&state, level - 1, player, currmin);
         if maxef < currmin {
             currmin = maxef;
-            minmove = movei as i8;
+            minmove = y as i8;
         }
         if maxef < currmax {
-            return  (currmin, movei as  i8);
+            return  (currmin, y as  i8);
         }
     }
     (currmin, minmove)
@@ -299,7 +312,7 @@ macro_rules! read_vec {
     };
 }
 
-fn main2(){
+fn main(){
     read!(player as u8);
     let mut board: Vec<Vec<u8>> = vec![];
     for i in 0..6{
@@ -309,7 +322,7 @@ fn main2(){
     println!("{:?}", get_max_move(&board, 5, player, INFINITY).1);
 }
 
-fn main() {
+fn main2() {
     let board: Vec<Vec<u8>> = vec![
         vec![0, 0, 0, 0, 0, 0, 0],
         vec![0, 0, 0, 0, 0, 0, 0],
@@ -333,7 +346,7 @@ fn main() {
     // println!("{}", evaluation_function(&board, 1));
     // println!("{}", evaluation_function(&board, 2));
     // println!("{}", pattern_counter_diagonal(&board, 1, &vec![Pattern{pattern: [1, 1, 0, 1], weight: 1.0}]));
-    println!("{:?}", get_max_move(&board, 5, 1, INFINITY));
+    println!("{:?}", get_max_move(&board, 6, 1, INFINITY));
     print!("DONE!")
     // println!("{:?}", pattern_counter(&board, 1, &vec![
     //         Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
