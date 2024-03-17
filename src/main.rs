@@ -371,7 +371,7 @@ fn main(){
         read_vec!(r1 as u8);
         board.push(r1);
     }
-    println!("{:?}", get_move(&board, player, 6));
+    println!("{:?}", get_move(&board, player, 5));
 }
 
 fn main2() {

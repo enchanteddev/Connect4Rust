@@ -1,0 +1,14 @@
+{
+  "name": "connect4",
+  "version": "0.1.0",
+  "files": [
+    "connect4_bg.wasm",
+    "connect4.js",
+    "connect4.d.ts"
+  ],
+  "module": "connect4.js",
+  "types": "connect4.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
