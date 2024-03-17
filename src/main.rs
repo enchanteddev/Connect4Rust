@@ -206,7 +206,7 @@ fn expand_board(board: &Vec<Vec<u8>>) -> Vec<(usize, usize)> {
     next_moves
 }
 
-static EF: f64 = 2.0;
+static EF: f64 = 20.0;
 
 fn is_terminal(board: &Vec<Vec<u8>>, player: u8) -> bool{
     let patterns = vec![
@@ -262,7 +262,7 @@ fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) -> (
     for (state, movei) in states.iter() {
         let (minef2, _) = get_min_move(&state, level - 1, player, currmax);
         let minef = if minef2 < 0.0 {
-            minef2 + 10.0
+            minef2// + 10.0
         } else {minef2};
         // dbglog = format!("{}\nLevel: {}", dbglog, level);
         // dbglog = format!("{}\n{}", dbglog, repr_board(&state));
@@ -312,7 +312,7 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
     for (state, movei) in states.iter() {
         let (maxef2, _) = get_max_move(&state, level - 1, player, currmin);
         let maxef = if maxef2 < 0.0 {
-            maxef2 + 10.0
+            maxef2// + 10.0
         } else {maxef2};
         // dbglog = format!("{}\nLevel: {}", dbglog, level);
         // dbglog = format!("{}\n{}", dbglog, repr_board(&state));
@@ -333,9 +333,14 @@ pub fn get_move(board: &Vec<Vec<u8>>, player: u8, levels: i32) -> i8{
     let enemy = if player == 1 {2} else {1};
     let next_states = expand_board(board);
     for (x, y) in next_states.iter(){
-        let mut state = board.clone();
-        state[*x][*y] = enemy;
-        if is_terminal(&state, enemy) {
+        let mut state_enemy = board.clone();
+        state_enemy[*x][*y] = enemy;
+        if is_terminal(&state_enemy, enemy) {
+            return *y as i8;
+        }
+        let mut state_player = board.clone();
+        state_player[*x][*y] = player;
+        if is_terminal(&state_player, player) {
             return *y as i8;
         }
     }
@@ -375,22 +380,22 @@ fn main(){
 }
 
 fn main2() {
-    // let board: Vec<Vec<u8>> = vec![
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    //     vec![0, 0, 0, 0, 0, 0, 0],
-    // ];
     let board: Vec<Vec<u8>> = vec![
-        vec![1, 0, 2, 1, 2, 0, 0],
-        vec![1, 0, 2, 1, 1, 1, 2],
-        vec![2, 0, 1, 1, 2, 2, 1],
-        vec![2, 0, 2, 2, 1, 1, 2],
-        vec![1, 0, 2, 2, 1, 2, 1],
-        vec![1, 1, 2, 2, 1, 2, 2],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0],
     ];
+    // let board: Vec<Vec<u8>> = vec![
+    //     vec![1, 0, 2, 1, 2, 0, 0],
+    //     vec![1, 0, 2, 1, 1, 1, 2],
+    //     vec![2, 0, 1, 1, 2, 2, 1],
+    //     vec![2, 0, 2, 2, 1, 1, 2],
+    //     vec![1, 0, 2, 2, 1, 2, 1],
+    //     vec![1, 1, 2, 2, 1, 2, 2],
+    // ];
     // let board: Vec<Vec<u8>> = vec![
     //     vec![1, 0, 0, 1, 1, 0, 1],
     //     vec![1, 0, 0, 2, 1, 0, 0],
@@ -406,7 +411,7 @@ fn main2() {
     // println!("{}", evaluation_function(&board, 1));
     // println!("{}", evaluation_function(&board, 2));
     // println!("{}", pattern_counter_diagonal(&board, 1, &vec![Pattern{pattern: [1, 1, 0, 1], weight: 1.0}]));
-    println!("{:?}", get_move(&board, 1, 3));
+    println!("{:?}", get_move(&board, 1, 5));
     print!("DONE!")
     // println!("{:?}", pattern_counter(&board, 1, &vec![
     //         Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
