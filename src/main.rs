@@ -187,7 +187,7 @@ fn evaluation_function(board: &Vec<Vec<u8>>, player: u8, enemy_factor: f64) -> f
 }
 
 
-fn expand_board(board: &Vec<Vec<u8>>, player: u8) -> Vec<(usize, usize)> {
+fn expand_board(board: &Vec<Vec<u8>>) -> Vec<(usize, usize)> {
     let mut next_moves: Vec<(usize, usize)> = vec![];
     for moves in 0..board[0].len(){
         if board[0][moves] != 0 {continue;}
@@ -219,8 +219,21 @@ fn is_terminal(board: &Vec<Vec<u8>>, player: u8) -> bool{
     horiz == 1.0 || verti == 1.0 || diag1 == 1.0
 }
 
-pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) -> (f64, i8){
-    let next_states = expand_board(board, player);
+fn print_board(board: &Vec<Vec<u8>>){
+    for row in board{
+        println!("{:?}", row);
+    }
+}
+fn repr_board(board: &Vec<Vec<u8>>) -> String{
+    let mut repr = String::new();
+    for row in board{
+        repr = format!("{}\n{:?}", repr, row);
+    }
+    repr
+}
+
+fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) -> (f64, i8){
+    let next_states = expand_board(board);
     // println!("{:?}", next_states);
     if next_states.len() == 0{
         return (evaluation_function(board, player, EF), -1);
@@ -245,8 +258,15 @@ pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) 
         }
         states.push((state, *y));
     }
+    // let mut dbglog = String::new();
     for (state, movei) in states.iter() {
-        let (minef, _) = get_min_move(&state, level - 1, player, currmax);
+        let (minef2, _) = get_min_move(&state, level - 1, player, currmax);
+        let minef = if minef2 < 0.0 {
+            minef2 + 10.0
+        } else {minef2};
+        // dbglog = format!("{}\nLevel: {}", dbglog, level);
+        // dbglog = format!("{}\n{}", dbglog, repr_board(&state));
+        // dbglog = format!("{}\n{:?} :-: {:?}", dbglog, minef, z);
         if minef > currmax {
             currmax = minef;
             maxmove = *movei as i8;
@@ -255,13 +275,14 @@ pub fn get_max_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmin: f64) 
             return (currmin, *movei as i8);
         }
     }
+    // println!("Max\n{}\n---------------", dbglog);
     (currmax, maxmove)
 }
 
 
 fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (f64, i8){
     let enemy = if player == 1 {2} else {1};
-    let next_states = expand_board(board, enemy);
+    let next_states = expand_board(board);
     if next_states.len() == 0{
         return (evaluation_function(board, player, EF), -1);
     }
@@ -273,21 +294,52 @@ fn get_min_move(board: &Vec<Vec<u8>>, level: i32, player: u8, currmax: f64) -> (
         }).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()).unwrap();
     }
 
+    let mut states: Vec<(Vec<Vec<u8>>, usize)> = vec![];
+
+    for (x, y) in next_states.iter(){
+        let mut state = board.clone();
+        state[*x][*y] = enemy;
+        if is_terminal(&state, enemy) {
+            return (evaluation_function(&state, player, EF), *y as i8);
+        }
+        states.push((state, *y));
+    }
+
     let mut currmin = INFINITY;
     let mut minmove = -1;
-    for (x, y) in next_states {
-        let mut state = board.clone();
-        state[x][y] = enemy;
-        let (maxef, _) = get_max_move(&state, level - 1, player, currmin);
+    // let mut dbglog = String::new();
+
+    for (state, movei) in states.iter() {
+        let (maxef2, _) = get_max_move(&state, level - 1, player, currmin);
+        let maxef = if maxef2 < 0.0 {
+            maxef2 + 10.0
+        } else {maxef2};
+        // dbglog = format!("{}\nLevel: {}", dbglog, level);
+        // dbglog = format!("{}\n{}", dbglog, repr_board(&state));
+        // dbglog = format!("{}\n{:?} :-: {:?}", dbglog, maxef, z);
         if maxef < currmin {
             currmin = maxef;
-            minmove = y as i8;
+            minmove = *movei as i8;
         }
         if maxef < currmax {
-            return  (currmin, y as  i8);
+            return  (currmin, *movei as  i8);
         }
     }
+    // println!("Min\n{}\n---------------", dbglog);
     (currmin, minmove)
+}
+
+pub fn get_move(board: &Vec<Vec<u8>>, player: u8, levels: i32) -> i8{
+    let enemy = if player == 1 {2} else {1};
+    let next_states = expand_board(board);
+    for (x, y) in next_states.iter(){
+        let mut state = board.clone();
+        state[*x][*y] = enemy;
+        if is_terminal(&state, enemy) {
+            return *y as i8;
+        }
+    }
+    return get_max_move(board, levels, player, INFINITY).1;
 }
 
 #[allow(unused_macros)]
@@ -319,17 +371,25 @@ fn main(){
         read_vec!(r1 as u8);
         board.push(r1);
     }
-    println!("{:?}", get_max_move(&board, 5, player, INFINITY).1);
+    println!("{:?}", get_move(&board, player, 6));
 }
 
 fn main2() {
+    // let board: Vec<Vec<u8>> = vec![
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    //     vec![0, 0, 0, 0, 0, 0, 0],
+    // ];
     let board: Vec<Vec<u8>> = vec![
-        vec![0, 0, 0, 0, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0],
+        vec![1, 0, 2, 1, 2, 0, 0],
+        vec![1, 0, 2, 1, 1, 1, 2],
+        vec![2, 0, 1, 1, 2, 2, 1],
+        vec![2, 0, 2, 2, 1, 1, 2],
+        vec![1, 0, 2, 2, 1, 2, 1],
+        vec![1, 1, 2, 2, 1, 2, 2],
     ];
     // let board: Vec<Vec<u8>> = vec![
     //     vec![1, 0, 0, 1, 1, 0, 1],
@@ -346,7 +406,7 @@ fn main2() {
     // println!("{}", evaluation_function(&board, 1));
     // println!("{}", evaluation_function(&board, 2));
     // println!("{}", pattern_counter_diagonal(&board, 1, &vec![Pattern{pattern: [1, 1, 0, 1], weight: 1.0}]));
-    println!("{:?}", get_max_move(&board, 6, 1, INFINITY));
+    println!("{:?}", get_move(&board, 1, 3));
     print!("DONE!")
     // println!("{:?}", pattern_counter(&board, 1, &vec![
     //         Pattern{pattern: [1, 1, 0, 1], weight: 1.0},
