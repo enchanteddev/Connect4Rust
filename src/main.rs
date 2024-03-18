@@ -333,14 +333,16 @@ pub fn get_move(board: &Vec<Vec<u8>>, player: u8, levels: i32) -> i8{
     let enemy = if player == 1 {2} else {1};
     let next_states = expand_board(board);
     for (x, y) in next_states.iter(){
-        let mut state_enemy = board.clone();
-        state_enemy[*x][*y] = enemy;
-        if is_terminal(&state_enemy, enemy) {
-            return *y as i8;
-        }
         let mut state_player = board.clone();
         state_player[*x][*y] = player;
         if is_terminal(&state_player, player) {
+            return *y as i8;
+        }
+    }
+    for (x, y) in next_states.iter(){
+        let mut state_enemy = board.clone();
+        state_enemy[*x][*y] = enemy;
+        if is_terminal(&state_enemy, enemy) {
             return *y as i8;
         }
     }
